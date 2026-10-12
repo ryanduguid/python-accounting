@@ -21,5 +21,5 @@ def test_timestamps_are_the_insert_time(session, entity):
     session.add(currency)
     session.commit()
     record = session.get(Currency, currency.id)
-    assert record.created_at >= before
-    assert record.updated_at >= before
+    assert record.created_at >= before  # nosec B101
+    assert record.updated_at >= before  # nosec B101
