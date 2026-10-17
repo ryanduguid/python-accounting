@@ -12,6 +12,7 @@ from python_accounting.transactions import JournalEntry
 
 
 class TestPostingAtomicity(TestCase):
+    """Keep durable ledger rows atomic across posting failures."""
     def setUp(self):
         self.engine = create_engine("sqlite://")
         Base.metadata.create_all(self.engine)
@@ -35,6 +36,7 @@ class TestPostingAtomicity(TestCase):
         self.engine.dispose()
 
     def transaction(self, compound):
+        """Build a fabricated simple or compound journal transaction."""
         transaction = JournalEntry(
             narration="Synthetic atomic posting",
             transaction_date=datetime(datetime.today().year, 6, 15),
@@ -56,6 +58,7 @@ class TestPostingAtomicity(TestCase):
         return transaction
 
     def test_late_failure_leaves_no_durable_ledgers(self):
+        """A late hash failure must not leave a committed partial posting."""
         for compound in (True, False):
             with self.subTest(compound=compound):
                 transaction = self.transaction(compound)
@@ -63,7 +66,7 @@ class TestPostingAtomicity(TestCase):
                 original = Ledger.get_hash
                 calls = 0
 
-                def fail_late(ledger, connection):
+                def fail_late(ledger, connection, original=original, compound=compound):
                     nonlocal calls
                     calls += 1
                     if calls == (2 if compound else 3):
@@ -80,6 +83,7 @@ class TestPostingAtomicity(TestCase):
                 self.assertEqual(count, 0)
 
     def test_between_flush_failure_cannot_be_committed_later(self):
+        """Refuse a later commit after an exception between ledger flushes."""
         for compound in (True, False):
             for error_type in (RuntimeError, KeyboardInterrupt):
                 with self.subTest(compound=compound, error_type=error_type):
@@ -90,7 +94,7 @@ class TestPostingAtomicity(TestCase):
                     original = getattr(target, name)
                     calls = 0
 
-                    def fail_second(*args, **kwargs):
+                    def fail_second(*args, original=original, error_type=error_type, **kwargs):
                         nonlocal calls
                         calls += 1
                         if calls == 2:
@@ -108,6 +112,7 @@ class TestPostingAtomicity(TestCase):
                     self.assertEqual(count, 0)
 
     def test_success_is_durable_balanced_and_hashed(self):
+        """Successful postings stay balanced and retain their hash chain."""
         for compound in (True, False):
             with self.subTest(compound=compound):
                 transaction = self.transaction(compound)
