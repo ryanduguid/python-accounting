@@ -112,7 +112,7 @@ class Ledger(  # pylint: disable=too-many-instance-attributes
             folios.pop(0)
 
         session.add(ledger)
-        session.commit()
+        session.flush()
 
         return Ledger._allocate_amount(
             session, post, amount, posts, folios, transaction, entry_type
@@ -216,7 +216,7 @@ class Ledger(  # pylint: disable=too-many-instance-attributes
             session.flush()
 
             session.add(folio)
-            session.commit()
+            session.flush()
 
     @staticmethod
     def post(session, transaction: Transaction) -> None:
@@ -226,11 +226,18 @@ class Ledger(  # pylint: disable=too-many-instance-attributes
         Args:
             session (Session): The accounting session to which the Account belongs.
             transaction (Transaction): The Transaction to be posted.
+
+        Commits the session on success and rolls it back if posting fails.
         """
-        if transaction.compound:
-            Ledger._post_compound(session, transaction)
-        else:
-            Ledger._post_simple(session, transaction)
+        try:
+            if transaction.compound:
+                Ledger._post_compound(session, transaction)
+            else:
+                Ledger._post_simple(session, transaction)
+            session.commit()
+        except BaseException:
+            session.rollback()
+            raise
 
     def get_hash(self, connection) -> None:
         """
