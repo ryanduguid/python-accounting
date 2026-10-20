@@ -1,7 +1,7 @@
 
 Python Accounting
 ==================
-[![Build Status](https://github.com/ekmungai/python-accounting/workflows/Python%20package/badge.svg)](https://github.com/ekmungai/python-accounting/actions)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/ekmungai/python-accounting/python-package.yml?label=Python%20package&style=flat&labelColor=000000)](https://github.com/ekmungai/python-accounting/actions)
 
 Python Accounting is the world's most comprehensive Double Entry Bookkeeping python library. 
 Unlike other similar libraries, Python Accounting focuses on the generation of Financial Reports
